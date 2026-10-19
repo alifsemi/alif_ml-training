@@ -1,0 +1,38 @@
+(12.23.29.948) Welcome to Alif Semiconductor AI/ML training! (phase 02 - TFLM integration)
+(12.23.29.956) Ethos-U NPU initialized successfully
+(12.23.29.964)   [TFLM] Initializing TensorFlow Lite Micro...
+(12.23.29.971)   [TFLM] Model loaded (schema v3)
+(12.23.29.971)   [TFLM] ---- Model specs (subgraphs=1) ----
+(12.23.29.978)   [TFLM] Inputs (1):
+(12.23.29.978)     [0] image_input
+(12.23.29.978)         type=INT8, dims=[1, 192, 192, 1], bytes=36864
+(12.23.29.985)   [TFLM] Outputs (2):
+(12.23.29.985)     [0] Identity
+(12.23.29.994)         type=INT8, dims=[1, 6, 6, 18], bytes=648
+(12.23.29.994)     [1] Identity_1
+(12.23.29.994)         type=INT8, dims=[1, 12, 12, 18], bytes=2592
+(12.23.30.003)   [TFLM] Operators (1 unique, 1 nodes):
+(12.23.30.003)     [0] CUSTOM(ethos-u) x1
+(12.23.30.012)   [TFLM] ---------------------------------
+(12.23.30.012)   [TFLM] Tensor arena @ 0x2000000 (size=524288)
+(12.23.30.021)   [TFLM] Model data  @ 0x2080000
+(12.23.30.021)   [TFLM] Arena used: 371240 bytes
+(12.23.30.031) TFLM initialized successfully
+(12.23.30.031) Running inference...
+(12.23.30.031)   [TFLM] Input:  type=9, bytes=36864
+(12.23.30.031)   [TFLM] Output: type=9, bytes=648
+(12.23.30.043)   [TFLM] Input  quant: scale=0.003921, zero_point=-128
+(12.23.30.043)   [TFLM] Output quant: scale=0.134084, zero_point=47
+(12.23.30.054)   [TFLM] Input  data @ 0x2000000
+(12.23.30.054)   [TFLM] Output data @ 0x2000000
+(12.23.30.054)   [TFLM] Inference complete
+(12.23.30.066)   [TFLM] Inference time: 2.456ms
+(12.23.30.066) Ethos-U PMU counters:
+(12.23.30.066)   NPU_TOTAL                   : 911792 cycles
+(12.23.30.066)   NPU_ACTIVE                  : 856761 cycles
+(12.23.30.083)   SRAM_RD_DATA_BEAT_RECEIVED  : 345651 beats
+(12.23.30.083)   SRAM_WR_DATA_BEAT_WRITTEN   : 214708 beats
+(12.23.30.083)   EXT_RD_DATA_BEAT_RECEIVED   : 0 beats
+(12.23.30.083)   EXT_WR_DATA_BEAT_WRITTEN    : 0 beats
+(12.23.30.096)   NPU_IDLE                    : 55031 cycles
+(12.23.30.096) Inference completed successfully

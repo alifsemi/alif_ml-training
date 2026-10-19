@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/tools/projmgr/2.12.0/tools/projmgr/schemas/cproject.schema.json
+project:
+  groups:
+    - group: Phase_01
+      files:
+        - file: main.c
+        - file: tflm_inference.cpp
+
+    - group: Common
+      files:
+        - file: ../common/tflm_util.cpp
+
+    - group: Model
+      files:
+        - file: ../model/model.c
+
+  output:
+    base-name: $Project$
+    type:
+      - elf
+      - bin
+
+  layers:
+    - layer: $BoardLayer$
+
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: ARM::CMSIS-Compiler:CORE
+    - component: ARM::CMSIS-Compiler:STDOUT:Custom
+
+    - component: AlifSemiconductor::Services:Retarget IO:STDOUT
+    - component: AlifSemiconductor::Device:Startup
+    - component: AlifSemiconductor::Device:SOC Peripherals:PINCONF
+    - component: AlifSemiconductor::Device:SOC Peripherals:GPIO
+    - component: AlifSemiconductor::CMSIS Driver:USART
+    - component: Device:SOC Peripherals:MHU
+    - component: Services:Secure Enclave:core&Source
+    - component: Services:Secure Enclave:Initialization Helper&Source
+
+    # TensorFlow Lite Micro and Ethos-U Driver
+    - component: ARM::Machine Learning:NPU Support:Ethos-U Driver&Generic U55
+    - component: ARM::CMSIS:DSP&Source
+    - component: ARM::CMSIS:NN Lib
+
+    - component: tensorflow::Data Exchange:Serialization:flatbuffers
+    - component: tensorflow::Data Processing:Math:gemmlowp fixed-point
+    - component: tensorflow::Data Processing:Math:kissfft
+    - component: tensorflow::Data Processing:Math:ruy
+    - component: tensorflow::Machine Learning:TensorFlow:Kernel&Ethos-U
+    - component: tensorflow::Machine Learning:TensorFlow:Kernel Utils
+    - component: tensorflow::Machine Learning:TensorFlow:Testing
+
+
+  
+  add-path:
+    - tflm_gcc # before TFLM pack so tflm_gcc/tensorflow/lite/micro/compatibility.h wins.
+    - ../model
+    - ../common
+  define:
+    - ETHOSU55 # Choose ETHOSU55.
+    - MODEL_YOLO_CPU # Let's start with the CPU model. See model.c for other options.
+    - ARM_MATH_AUTOVECTORIZE # CMSIS-NN GCC compile bug workaround.
+
+  packs:
+    - pack: ARM::CMSIS-Compiler
+
+# TensorFlow Lite Micro
+    - pack: tensorflow::tensorflow-lite-micro@1.26.5
+
+# TensorFlow Lite Micro dependencies
+    - pack: ARM::ethos-u-core-driver@1.26.5
+    - pack: tensorflow::flatbuffers@^1.26.5
+    - pack: tensorflow::gemmlowp@^1.26.5
+    - pack: tensorflow::kissfft@^1.26.5
+    - pack: tensorflow::ruy@^1.26.5
+
+    - pack: ARM::CMSIS-DSP@^1.17.0
+    - pack: ARM::CMSIS-NN@^7.0.0
+
+

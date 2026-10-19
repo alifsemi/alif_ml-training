@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/tools/projmgr/2.12.0/tools/projmgr/schemas/cproject.schema.json
+project:
+  groups:
+    - group: Phase_04
+      files:
+        - file: main.c
+        - file: tflm_inference.cpp
+        - file: camera.c
+        - file: display.c
+        - file: power.c
+
+    - group: Common
+      files:
+        - file: ../common/tflm_util.cpp
+        - file: ../common/ethosu_cb_dcache.c
+        - file: ../common/ethosu_init.c
+        - file: ../common/npu_pmu.c
+        - file: ../common/power_gpio.c
+        - file: ../common/object_detection.c
+
+    - group: Model
+      files:
+        - file: ../model/model.c
+
+  output:
+    base-name: $Project$
+    type:
+      - elf
+      - bin
+
+  layers:
+    - layer: $BoardLayer$
+
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: ARM::CMSIS-Compiler:CORE
+    - component: ARM::CMSIS-Compiler:STDOUT:Custom
+    - component: ARM::CMSIS-Compiler:STDERR:Custom
+
+    - component: AlifSemiconductor::Services:Retarget IO:STDOUT
+    - component: AlifSemiconductor::Services:Retarget IO:STDERR
+    - component: AlifSemiconductor::Device:Startup
+    - component: AlifSemiconductor::Device:SOC Peripherals:PINCONF
+    - component: AlifSemiconductor::Device:SOC Peripherals:GPIO
+    - component: AlifSemiconductor::CMSIS Driver:USART
+    - component: Device:SOC Peripherals:MHU
+    - component: Services:Secure Enclave:core&Source
+    - component: Services:Secure Enclave:Initialization Helper&Source
+
+    # Camera: OV5675 sensor (I2C control, MIPI CSI-2 data) -> CPI -> ISP
+    - component: AlifSemiconductor::BSP:External peripherals:CAMERA Sensor OV5675
+    - component: AlifSemiconductor::CMSIS Driver:I2C
+    - component: AlifSemiconductor::Device:SOC Peripherals:CPI
+    - component: AlifSemiconductor::Device:SOC Peripherals:ISP
+    - component: AlifSemiconductor::Device:SOC Peripherals:MIPI CSI2
+    - component: AlifSemiconductor::Device:SOC Peripherals:MIPI DSI CSI2 DPHY
+
+    # Display: frame buffer -> CDC200 -> MIPI DSI -> ILI9806E panel
+    - component: AlifSemiconductor::Device:SOC Peripherals:CDC
+    - component: AlifSemiconductor::Device:SOC Peripherals:MIPI DSI
+    - component: AlifSemiconductor::BSP:External peripherals:ILI9806E LCD panel
+
+    # D/AVE2D GPU driver (AIPL headers depend on it, display drawing uses it)
+    - component: AlifSemiconductor::Graphics:DAVE2D:Layer2
+    - component: AlifSemiconductor::Graphics:DAVE2D:Layer1
+    - component: AlifSemiconductor::Graphics:DAVE2D:Layer0Lib
+
+    # Alif Image Processing Library
+    - component: AlifSemiconductor::Graphics:AIPL:Essential
+    - component: AlifSemiconductor::Graphics:AIPL:Color conversion
+
+    # TensorFlow Lite Micro and Ethos-U Driver
+    #- component: ARM::Machine Learning:NPU Support:Ethos-U Driver&Generic U55
+    - component: ARM::Machine Learning:NPU Support:Ethos-U Driver&Generic U85
+    - component: ARM::CMSIS:DSP&Source
+    - component: ARM::CMSIS:NN Lib
+
+    - component: tensorflow::Data Exchange:Serialization:flatbuffers
+    - component: tensorflow::Data Processing:Math:gemmlowp fixed-point
+    - component: tensorflow::Data Processing:Math:kissfft
+    - component: tensorflow::Data Processing:Math:ruy
+    - component: tensorflow::Machine Learning:TensorFlow:Kernel&Ethos-U
+    - component: tensorflow::Machine Learning:TensorFlow:Kernel Utils
+    - component: tensorflow::Machine Learning:TensorFlow:Testing
+
+  add-path:
+    - tflm_gcc # before TFLM pack so tflm_gcc/tensorflow/lite/micro/compatibility.h wins.
+    - ../model
+    - ../common
+  define:
+    #- NPU_PMU
+    #- POWER_GPIO # Blue LED (LEDRGB0_B) is HIGH during inference.
+    #- ETHOSU55 # Choose ETHOSU55.
+    #- MODEL_YOLO_U55_128 # See model.c for other options.
+
+    - ETHOSU85
+    - MODEL_YOLO_U85_256
+    #- MODEL_YOLO_U85_256_SRAM
+    - ARM_MATH_AUTOVECTORIZE # CMSIS-NN GCC compile bug workaround.
+    # U85 on E8: Normal Non-cacheable Non-bufferable. 0x20 = SRAM port, 0x24 = EXT port.
+    # Driver defaults are Device memory and fault. With ETHOSU85 the port per address is
+    # chosen by ethosu_config_select() in common/ethosu_cb_dcache.c; NPU_QCONFIG and
+    # NPU_REGIONCFG_n are only used by the driver's default implementation.
+    - AXI_LIMIT_SRAM_MAX_BEATS: 2
+    - AXI_LIMIT_EXT_MAX_BEATS: 2
+    - NPU_MEM_ATTR_0: 0x20
+    - NPU_MEM_ATTR_1: 0x20
+    - NPU_MEM_ATTR_2: 0x24
+    - NPU_MEM_ATTR_3: 0x24
+    - NPU_QCONFIG: 3
+    - NPU_REGIONCFG_0: 3
+    - NPU_REGIONCFG_1: 0
+
+  packs:
+    - pack: ARM::CMSIS-Compiler
+
+# Camera image processing
+    - pack: AlifSemiconductor::AIPL@1.3.5
+    - pack: AlifSemiconductor::Dave2DDriver@2.0.2
+
+# TensorFlow Lite Micro
+    - pack: tensorflow::tensorflow-lite-micro@1.26.5
+
+# TensorFlow Lite Micro dependencies
+    - pack: ARM::ethos-u-core-driver@1.26.5
+    - pack: tensorflow::flatbuffers@^1.26.5
+    - pack: tensorflow::gemmlowp@^1.26.5
+    - pack: tensorflow::kissfft@^1.26.5
+    - pack: tensorflow::ruy@^1.26.5
+
+    - pack: ARM::CMSIS-DSP@^1.17.0
+    - pack: ARM::CMSIS-NN@^7.0.0
+
+

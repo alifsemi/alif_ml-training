@@ -1,0 +1,297 @@
+yolo-fastest_192_face_v4_vela_U55_256.tflite
+--------------------------------------------
+
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u55-256 --optimise Performance --config ensemble_vela.ini --system-config RTSS_HP_SRAM_MRAM --memory-mode Shared_Sram yolo-fastest_192_face_v4.tflite 
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration               Ethos_U55_256
+System configuration                RTSS_HP_SRAM_MRAM
+Memory mode                               Shared_Sram
+Accelerator clock                                 400 MHz
+Design peak SRAM bandwidth                       2.27 GB/s
+Design peak Off-chip Flash bandwidth             0.36 GB/s
+
+Total SRAM used                                360.84 KiB
+Total Off-chip Flash used                      347.03 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 112 (100.0%)
+
+Average SRAM bandwidth                           2.44 GB/s
+Input   SRAM bandwidth                           3.90 MB/batch
+Weight  SRAM bandwidth                           0.94 MB/batch
+Output  SRAM bandwidth                           2.92 MB/batch
+Total   SRAM bandwidth                           7.97 MB/batch
+Total   SRAM bandwidth            per input      7.97 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.10 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.34 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.34 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.34 MB/inference (batch size 1)
+
+Neural network macs                          39152736 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.02 Tops/s
+
+NPU cycles                                    1276279 cycles/batch
+SRAM Access cycles                             648124 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                   173027 cycles/batch
+Total cycles                                  1304986 cycles/batch
+
+Batch Inference time                 3.26 ms,  306.52 inferences/s (batch size 1)
+
+
+
+yolo-fastest_192_face_v4_vela_U55_128.tflite
+--------------------------------------------
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u55-128 --optimise Performance --config ensemble_vela.ini --system-config RTSS_HE_SRAM_MRAM --memory-mode Shared_Sram yolo-fastest_192_face_v4.tflite 
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration               Ethos_U55_128
+System configuration                RTSS_HE_SRAM_MRAM
+Memory mode                               Shared_Sram
+Accelerator clock                                 160 MHz
+Design peak SRAM bandwidth                       1.19 GB/s
+Design peak Off-chip Flash bandwidth             0.36 GB/s
+
+Total SRAM used                                360.84 KiB
+Total Off-chip Flash used                      346.59 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 112 (100.0%)
+
+Average SRAM bandwidth                           0.68 GB/s
+Input   SRAM bandwidth                           4.16 MB/batch
+Weight  SRAM bandwidth                           1.11 MB/batch
+Output  SRAM bandwidth                           2.92 MB/batch
+Total   SRAM bandwidth                           8.50 MB/batch
+Total   SRAM bandwidth            per input      8.50 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.03 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.34 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.34 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.34 MB/inference (batch size 1)
+
+Neural network macs                          39152736 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.01 Tops/s
+
+NPU cycles                                    2011098 cycles/batch
+SRAM Access cycles                             515879 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                    68440 cycles/batch
+Total cycles                                  2011098 cycles/batch
+
+Batch Inference time                12.57 ms,   79.56 inferences/s (batch size 1)
+
+
+
+
+yolo-fastest_192_face_v4_vela_U85_256.tflite
+--------------------------------------------
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u85-256 --optimise Performance --config ensemble_vela.ini --system-config Ethos_U85_SRAM_MRAM --memory-mode Shared_Sram yolo-fastest_192_face_v4.tflite 
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration               Ethos_U85_256
+System configuration              Ethos_U85_SRAM_MRAM
+Memory mode                               Shared_Sram
+Accelerator clock                                 400 MHz
+Design peak SRAM bandwidth                      11.92 GB/s
+Design peak Off-chip Flash bandwidth             0.72 GB/s
+
+Total SRAM used                                361.05 KiB
+Total Off-chip Flash used                      369.25 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 95 (100.0%)
+
+Average SRAM bandwidth                           3.35 GB/s
+Input   SRAM bandwidth                           4.28 MB/batch
+Weight  SRAM bandwidth                           1.13 MB/batch
+Output  SRAM bandwidth                           2.70 MB/batch
+Total   SRAM bandwidth                           8.43 MB/batch
+Total   SRAM bandwidth            per input      8.43 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.14 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.36 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.36 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.36 MB/inference (batch size 1)
+
+Neural network macs                          38807136 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.03 Tops/s
+
+NPU cycles                                    1006450 cycles/batch
+SRAM Access cycles                             258120 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                   245898 cycles/batch
+Total cycles                                  1007078 cycles/batch
+
+Batch Inference time                 2.52 ms,  397.19 inferences/s (batch size 1)
+
+
+yolo-fastest_192_face_v4_vela_U85_256_SRAM.tflite
+-------------------------------------------------
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u85-256 --optimise Performance --config ensemble_vela.ini --system-config Ethos_U85_SRAM_Only --memory-mode Shared_Sram yolo-fastest_192_face_v4.tflite 
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration               Ethos_U85_256
+System configuration              Ethos_U85_SRAM_Only
+Memory mode                               Shared_Sram
+Accelerator clock                                 400 MHz
+Design peak SRAM bandwidth                      11.92 GB/s
+Design peak On-chip Flash bandwidth             11.92 GB/s
+
+Total SRAM used                                362.02 KiB
+Total On-chip Flash used                       508.36 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 95 (100.0%)
+
+Average SRAM bandwidth                           3.79 GB/s
+Input   SRAM bandwidth                           4.28 MB/batch
+Weight  SRAM bandwidth                           1.75 MB/batch
+Output  SRAM bandwidth                           2.70 MB/batch
+Total   SRAM bandwidth                           9.05 MB/batch
+Total   SRAM bandwidth            per input      9.05 MB/inference (batch size 1)
+
+Average On-chip Flash bandwidth                  0.21 GB/s
+Input   On-chip Flash bandwidth                  0.00 MB/batch
+Weight  On-chip Flash bandwidth                  0.50 MB/batch
+Output  On-chip Flash bandwidth                  0.00 MB/batch
+Total   On-chip Flash bandwidth                  0.50 MB/batch
+Total   On-chip Flash bandwidth   per input      0.50 MB/inference (batch size 1)
+
+Neural network macs                          38807136 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.03 Tops/s
+
+NPU cycles                                     955331 cycles/batch
+SRAM Access cycles                             269763 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                     10545 cycles/batch
+Off-chip Flash Access cycles                        0 cycles/batch
+Total cycles                                   955871 cycles/batch
+
+Batch Inference time                 2.39 ms,  418.47 inferences/s (batch size 1)
+
+
+
+kws_micronet_m_vela_U55_128.tflite
+----------------------------------
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u55-128 --optimise Performance --config ensemble_vela.ini --system-config RTSS_HE_SRAM_MRAM --memory-mode Shared_Sram kws_micronet_m.tflite 
+
+Network summary for kws_micronet_m
+Accelerator configuration               Ethos_U55_128
+System configuration                RTSS_HE_SRAM_MRAM
+Memory mode                               Shared_Sram
+Accelerator clock                                 160 MHz
+Design peak SRAM bandwidth                       1.19 GB/s
+Design peak Off-chip Flash bandwidth             0.36 GB/s
+
+Total SRAM used                                110.72 KiB
+Total Off-chip Flash used                      134.72 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 13 (100.0%)
+
+Average SRAM bandwidth                           0.54 GB/s
+Input   SRAM bandwidth                           0.50 MB/batch
+Weight  SRAM bandwidth                           0.60 MB/batch
+Output  SRAM bandwidth                           0.24 MB/batch
+Total   SRAM bandwidth                           1.39 MB/batch
+Total   SRAM bandwidth            per input      1.39 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.05 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.13 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.13 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.13 MB/inference (batch size 1)
+
+Neural network macs                          15580852 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.01 Tops/s
+
+NPU cycles                                     409595 cycles/batch
+SRAM Access cycles                              79683 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                    12521 cycles/batch
+Total cycles                                   409595 cycles/batch
+
+Batch Inference time                 2.56 ms,  390.63 inferences/s (batch size 1)
+
+
+
+kws_micronet_m_vela_U55_256.tflite 
+----------------------------------
+Network summary for kws_micronet_m
+Accelerator configuration               Ethos_U55_256
+System configuration                RTSS_HP_SRAM_MRAM
+Memory mode                               Shared_Sram
+Accelerator clock                                 400 MHz
+Design peak SRAM bandwidth                       2.27 GB/s
+Design peak Off-chip Flash bandwidth             0.36 GB/s
+
+Total SRAM used                                110.75 KiB
+Total Off-chip Flash used                      134.80 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 13 (100.0%)
+
+Average SRAM bandwidth                           2.07 GB/s
+Input   SRAM bandwidth                           0.53 MB/batch
+Weight  SRAM bandwidth                           0.38 MB/batch
+Output  SRAM bandwidth                           0.24 MB/batch
+Total   SRAM bandwidth                           1.17 MB/batch
+Total   SRAM bandwidth            per input      1.17 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.23 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.13 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.13 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.13 MB/inference (batch size 1)
+
+Neural network macs                          15580852 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.06 Tops/s
+
+NPU cycles                                     223454 cycles/batch
+SRAM Access cycles                              90675 cycles/batch
+DRAM Access cycles                                  0 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                    36603 cycles/batch
+Total cycles                                   226206 cycles/batch
+
+Batch Inference time                 0.57 ms, 1768.30 inferences/s (batch size 1)
+
