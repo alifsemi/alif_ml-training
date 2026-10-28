@@ -67,6 +67,7 @@ project:
 
     # Alif Image Processing Library
     - component: AlifSemiconductor::Graphics:AIPL:Essential
+    - component: AlifSemiconductor::Graphics:AIPL:Basic
     - component: AlifSemiconductor::Graphics:AIPL:Color conversion
 
     # TensorFlow Lite Micro and Ethos-U Driver

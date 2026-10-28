@@ -103,13 +103,13 @@
 // <o> CPI number of active framebuffers
 // <i> Defines CPI number of active framebuffers
 // <i> Default: 2
-#define RTE_CPI_NUM_ACTIVE_FRAMEBUFFERS                       2
+#define RTE_CPI_NUM_ACTIVE_FRAMEBUFFERS                       0
 
 // <o> Enable CPI streaming
 // <0=> Disable
 // <1=> Enable
 // <i> Default: 1
-#define RTE_CPI_STREAMING_ENABLE                              1
+#define RTE_CPI_STREAMING_ENABLE                              0
 
 // <e> MT9M114 [Driver_MT9M114]
 // <o> Enable/Disable MT9M114 camera sensor
@@ -421,15 +421,15 @@
 //    <41=> RAW422SP (RAW422 semi-planar)
 // <i> Defines ISP output pixel format for memory dump
 // <i> Default: RGB888
-#define RTE_ISP_OUTPUT_FORMAT 32
+#define RTE_ISP_OUTPUT_FORMAT 39
 
 // <o> ISP Scaler Output Width
 // <i> Width in pixels of the ISP scaler output (after scaling from sensor dimensions).
-#define RTE_ISP_OUTPUT_WIDTH        480
+#define RTE_ISP_OUTPUT_WIDTH        192
 
 // <o> ISP Scaler Output Height
 // <i> Height in pixels of the ISP scaler output (after scaling from sensor dimensions).
-#define RTE_ISP_OUTPUT_HEIGHT       480
+#define RTE_ISP_OUTPUT_HEIGHT       192
 
 #endif
 // </e> ISP (ISP) [Driver_ISP]
@@ -1197,7 +1197,7 @@
 // <o> select OV5675 override CPI color mode
 // <i> defines select OV5675 override CPI color mode.
 // <i> default: 1
-#define RTE_OV5675_CAMERA_SENSOR_OVERRIDE_CPI_COLOR_MODE 1
+#define RTE_OV5675_CAMERA_SENSOR_OVERRIDE_CPI_COLOR_MODE 0
 
 // <o> select OV5675 CPI color mode
 // <i> defines select OV5675 CPI color mode.
@@ -1594,7 +1594,7 @@
 //      <7=> ARGB4444
 // <i> Defines CDC200 pixel format
 // <i> Default: RGB888
-#define RTE_CDC200_PIXEL_FORMAT   1
+#define RTE_CDC200_PIXEL_FORMAT   2
 
 // <o> CDC200 Constant alpha <0-255>
 // <i> Defines CDC200 constant alpha range from 0 (fully transparent) to 255 or 1.0 (fully opaque).

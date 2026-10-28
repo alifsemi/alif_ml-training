@@ -138,7 +138,7 @@
                 "echo Connect > .cmd.jlink &&",
                 "echo Erase >> .cmd.jlink &&",
                 "echo Exit >> .cmd.jlink &&",
-                "JLink.exe -device AE822FA0E5597LS0_M55_HE -if swd -speed 4000 -commandfile .cmd.jlink"
+                "JLink.exe -device AE822FA0E5597BS0_M55_HE -if swd -speed 4000 -commandfile .cmd.jlink"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/",
@@ -157,9 +157,9 @@
             "type": "shell",
             "command": [
                 "echo Connect > .cmd.jlink &&",
-                "echo LoadFile \"out/phase_00/DevKit-E8-HE/debug/phase_00.elf\" >> .cmd.jlink &&",
+                "echo LoadFile \"out/phase_04/AppKit-E8-HE/debug/phase_04.elf\" >> .cmd.jlink &&",
                 "echo Exit >> .cmd.jlink &&",
-                "JLink.exe -device AE822FA0E5597LS0_M55_HE -if swd -speed 4000 -commandfile .cmd.jlink"
+                "JLink.exe -device AE822FA0E5597BS0_M55_HE -if swd -speed 4000 -commandfile .cmd.jlink"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/",
@@ -189,7 +189,7 @@
             },
             "args": [
                 "-device",
-                "AE822FA0E5597LS0_M55_HE",
+                "AE822FA0E5597BS0_M55_HE",
                 "-endian",
                 "little",
                 "-if",

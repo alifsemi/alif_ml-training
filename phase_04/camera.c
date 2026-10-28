@@ -206,7 +206,13 @@ const uint8_t *camera_capture(void)
     return NULL;
   }
 
+  uint32_t t0 = ARM_PMU_Get_CCNTR();
+  const uint32_t timeout_cycles = SystemCoreClock; /* about 1 second */
   while (!(camera_events & (EVENT_FRAME_DONE | EVENT_ERROR))) {
+    if ((ARM_PMU_Get_CCNTR() - t0) > timeout_cycles) {
+      printf("  [CAM] ERROR: Capture timeout waiting for frame event\n");
+      return NULL;
+    }
     __WFI();
   }
 

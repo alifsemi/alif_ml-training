@@ -29,6 +29,7 @@
 #include "board_config.h"
 #include "se_services_port.h"
 #include "aipl_color_conversion.h"
+#include "aipl_flip.h"
 
 #include "ethosu_init.h"
 #include "model.h"
@@ -47,6 +48,7 @@
 
 /* Camera frame converted to RGB888 packed (R, G, B per pixel), the format od_pre_process expects */
 static uint8_t camera_rgb[CAMERA_WIDTH * CAMERA_HEIGHT * 3] __attribute__((aligned(32), section(".bss.camera_frame_buf")));
+static uint8_t camera_rgb_flipped[CAMERA_WIDTH * CAMERA_HEIGHT * 3] __attribute__((aligned(32), section(".bss.camera_frame_buf")));
 
 static float cycles_to_ms(uint32_t cycles)
 {
@@ -142,9 +144,19 @@ int main(void)
             goto bail;
         }
 
+        aipl_ret = aipl_flip(camera_rgb, camera_rgb_flipped,
+                             CAMERA_WIDTH,
+                             CAMERA_WIDTH, CAMERA_HEIGHT,
+                             AIPL_COLOR_RGB888,
+                             false, true);
+        if (aipl_ret != AIPL_ERR_OK) {
+            printf("AIPL vertical flip failed: %s\n", aipl_error_str(aipl_ret));
+            goto bail;
+        }
+
         /* Pre processing: RGB888 image -> grayscale INT8 directly into the input tensor */
         uint32_t t_pre = ARM_PMU_Get_CCNTR();
-        od_pre_process(camera_rgb, (int8_t *)input.data, CAMERA_WIDTH * CAMERA_HEIGHT);
+        od_pre_process(camera_rgb_flipped, (int8_t *)input.data, CAMERA_WIDTH * CAMERA_HEIGHT);
         t_pre = ARM_PMU_Get_CCNTR() - t_pre;
 
         /* Inference: input is already in the tensor, outputs are read in place */
@@ -162,7 +174,7 @@ int main(void)
 
         /* Display: camera image and detection boxes, both scaled from model input coordinates */
         uint32_t t_display = ARM_PMU_Get_CCNTR();
-        display_draw_image(camera_rgb, CAMERA_WIDTH, CAMERA_HEIGHT, IMAGE_X, IMAGE_Y, IMAGE_SCALE);
+        display_draw_image(camera_rgb_flipped, CAMERA_WIDTH, CAMERA_HEIGHT, IMAGE_X, IMAGE_Y, IMAGE_SCALE);
         for (int i = 0; i < num_boxes; i++) {
             display_draw_box(IMAGE_X + boxes[i].x * IMAGE_SCALE, IMAGE_Y + boxes[i].y * IMAGE_SCALE,
                              boxes[i].w * IMAGE_SCALE, boxes[i].h * IMAGE_SCALE,
