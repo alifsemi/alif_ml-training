@@ -198,6 +198,54 @@ Total cycles                                   955871 cycles/batch
 Batch Inference time                 2.39 ms,  418.47 inferences/s (batch size 1)
 
 
+yolo-fastest_192_face_v4_vela_U85_256_OSPI.tflite
+-------------------------------------------------
+vela --verbose-cycle-estimate --output-dir vela_output --accelerator-config ethos-u85-256 --optimise Performance --config ensemble_vela.ini --system-config Ethos_U85_SRAM_OSPI --memory-mode Shared_Sram yolo-fastest_192_face_v4.tflite
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration               Ethos_U85_256
+System configuration              Ethos_U85_SRAM_OSPI
+Memory mode                               Shared_Sram
+Accelerator clock                                 400 MHz
+Design peak SRAM bandwidth                      11.92 GB/s
+Design peak DRAM bandwidth                       0.31 GB/s
+
+Total SRAM used                                361.05 KiB
+Total DRAM used                                370.36 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 95 (100.0%)
+
+Average SRAM bandwidth                           1.82 GB/s
+Input   SRAM bandwidth                           4.28 MB/batch
+Weight  SRAM bandwidth                           1.13 MB/batch
+Output  SRAM bandwidth                           2.70 MB/batch
+Total   SRAM bandwidth                           8.43 MB/batch
+Total   SRAM bandwidth            per input      8.43 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           0.08 GB/s
+Input   DRAM bandwidth                           0.00 MB/batch
+Weight  DRAM bandwidth                           0.36 MB/batch
+Output  DRAM bandwidth                           0.00 MB/batch
+Total   DRAM bandwidth                           0.36 MB/batch
+Total   DRAM bandwidth            per input      0.36 MB/inference (batch size 1)
+
+Neural network macs                          38807136 MACs/batch
+
+Info: The numbers below are internal compiler estimates.
+For performance numbers the compiled network should be run on an FVP Model or FPGA.
+
+Network Tops/s                                   0.02 Tops/s
+
+NPU cycles                                    1592934 cycles/batch
+SRAM Access cycles                             260853 cycles/batch
+DRAM Access cycles                            1275287 cycles/batch
+On-chip Flash Access cycles                         0 cycles/batch
+Off-chip Flash Access cycles                        0 cycles/batch
+Total cycles                                  1851394 cycles/batch
+
+Batch Inference time                 4.63 ms,  216.05 inferences/s (batch size 1)
+
 
 kws_micronet_m_vela_U55_128.tflite
 ----------------------------------
