@@ -5,6 +5,7 @@
  *   MODEL_YOLO_U55_256       yolo-fastest_192_face_v4_vela_U55_256.c
  *   MODEL_YOLO_U85_256       yolo-fastest_192_face_v4_vela_U85_256.c
  *   MODEL_YOLO_U85_256_SRAM  yolo-fastest_192_face_v4_vela_U85_256_SRAM.c
+ *   MODEL_YOLO_U85_256_OSPI  yolo-fastest_192_face_v4_vela_U85_256_OSPI.c
  *   MODEL_YOLO_CPU           yolo-fastest_192_face_v4.c
  *   MODEL_KWS_U55_128        kws_micronet_m_vela_U55_128.c
  *   MODEL_KWS_U55_256        kws_micronet_m_vela_U55_256.c
@@ -21,6 +22,8 @@
 #include "yolo-fastest_192_face_v4_vela_U55_256.c"
 #elif defined(MODEL_YOLO_U85_256_SRAM)
 #include "yolo-fastest_192_face_v4_vela_U85_256_SRAM.c"
+#elif defined(MODEL_YOLO_U85_256_OSPI)
+#include "yolo-fastest_192_face_v4_vela_U85_256_OSPI.c"
 #elif defined(MODEL_YOLO_U85_256)
 #include "yolo-fastest_192_face_v4_vela_U85_256.c"
 #elif defined(MODEL_YOLO_CPU)
@@ -43,11 +46,19 @@ static uint8_t model_data_in_sram[sizeof(model_tflite)]
     __attribute__((aligned(16), section(".bss.model_sram")));
 #endif
 
+#if defined(MODEL_YOLO_U85_256_OSPI)
+static uint8_t model_data_in_psram[sizeof(model_tflite)]
+    __attribute__((aligned(16), section(".bss.model_psram")));
+#endif
+
 const uint8_t *get_model_tflite(void)
 {
 #if defined(MODEL_YOLO_U85_256_SRAM)
     memcpy(model_data_in_sram, model_tflite, sizeof(model_tflite));
     return model_data_in_sram;
+#elif defined(MODEL_YOLO_U85_256_OSPI)
+    memcpy(model_data_in_psram, model_tflite, sizeof(model_tflite));
+    return model_data_in_psram;
 #else
     return model_tflite;
 #endif

@@ -44,7 +44,7 @@ solution:
       target-set:
         - set:
           images:
-            - project-context: phase_04.debug
+            - project-context: phase_00.debug
 
     - type: AppKit-E8-HP
       device: Alif Semiconductor::AE822FA0E5597BS0:M55_HP
@@ -54,7 +54,7 @@ solution:
       target-set:
         - set:
           images:
-            - project-context: phase_00.debug
+            - project-context: phase_05.debug
 
   build-types:
     - type: debug
@@ -77,3 +77,4 @@ solution:
     - project: phase_02/phase_02.cproject.yml
     - project: phase_03/phase_03.cproject.yml
     - project: phase_04/phase_04.cproject.yml
+    - project: phase_05/phase_05.cproject.yml
