@@ -21,14 +21,8 @@ Welcome everyone. Today is mostly hands-on: you will take a face detection model
 
 # About me and the team
 
-- **Presenter name**, role, Alif Semiconductor (now part of Analog Devices)
+- **Aki Makkonen**
 - Background: embedded software, ML deployment on MCUs
-- Helpers in the room today: names and roles
-- How to reach us after the session: e-mail or Teams channel
-
-::: notes
-Placeholder slide: replace with your own bio and photo. Keep it to five minutes.
-:::
 
 ---
 
@@ -122,6 +116,26 @@ The U85 has the same MAC count as the HP U55, but a wider memory system and bett
 
 ---
 
+# Weights, activations and the tensor arena
+
+| | Weights | Activations | Tensor arena |
+|---|---|---|---|
+| What it is | Learned parameters: filters, biases | Intermediate tensors that flow between layers | One static buffer that TFLM carves all activations from |
+| Lifetime | Fixed at training, part of the `.tflite` | Rewritten on every inference | Allocated once, reused every inference |
+| Access | Read-only | Read and write | Read and write |
+| This model | About 355 KB (Vela-encoded) | Input 192×192×1 = 36 KB, plus every layer output | About 370 KB used |
+| Must live in | Any readable memory: MRAM, SRAM, OSPI | RAM | RAM: SRAM, DTCM or PSRAM |
+
+- **Weights** are constants, so they can stay in non-volatile memory and execute in place. What matters is the read bandwidth.
+- **Activations** only need to exist while a layer that uses them is running. TFLM plans their lifetimes and overlaps buffers that are never alive at the same time.
+- The **tensor arena** therefore holds the *peak* of live activations, not their sum, plus the input, output and scratch buffers and a little bookkeeping. With Ethos-U, the NPU reads and writes the arena directly.
+
+::: notes
+This is the vocabulary for the rest of the day. The memory map on the next slide answers two questions: where do the weights live (read-only, bandwidth matters) and where does the arena live (read-write RAM, bandwidth and capacity matter)? The Vela report later gives the arena size as "Total SRAM used", and the firmware prints "Arena used" so you can check it.
+:::
+
+---
+
 # E8 memory map: where things can live
 
 | Memory | Address | Size | Speed | Typical ML use |
@@ -132,6 +146,8 @@ The U85 has the same MAC count as the HP U55, but a wider memory system and bett
 | MRAM | 0x8000_0000 | 5.5 MB | Read-optimised NVM | Code + model weights (XIP) |
 | OSPI flash / PSRAM | XIP windows, e.g. 0xC000_0000 | Board dependent | Slowest | Large models, big buffers |
 
+- The speed column reflects non-striped configuration. When SRAMs are striped they produce higher troughput than TCMs.
+- Ethos-U55s live in processor subsystem so in some use-cases it may be feasible to use TCMs but both the U85 and U55 benefit from SRAM striping. 
 - The NPU is a bus master, so TCM addresses must be translated to their global aliases. `ethosu_address_remap()` in `common/ethosu_cb_dcache.c` does this.
 - The linker script places `.bss.tensor_arena`, `.bss.model_sram` and the frame buffers in SRAM0.
 
@@ -190,6 +206,12 @@ Steps 1 and 2 are out of scope today; the models in the model folder are already
 
 # Repository and workflow
 
+Repository: [https://github.com/alifsemi/alif_ml-training.git](https://github.com/alifsemi/alif_ml-training.git)
+
+```sh
+git clone https://github.com/alifsemi/alif_ml-training.git
+```
+
 | Folder | Contents |
 |---|---|
 | `phase_00` … `phase_04` | One complete CMSIS project per training step |
@@ -217,8 +239,9 @@ Steps 1 and 2 are out of scope today; the models in the model folder are already
 1. Open the repository folder in VS Code and wait for the CMSIS extension to load the solution
 2. **Manage Solution** (gear icon): target **AppKit-E8-HE**, project **phase_00**, build type **debug**
 3. **Build** (hammer icon)
-4. Program: `F1` → *Tasks: Run Task* → **Program with Security Toolkit**
-5. Open a serial terminal on the UART COM port (115200 8N1) and reset the board
+4. Set the AppKit UART switch SW4 to SE and program the debug stub: `F1` → *Tasks: Run Task* → **Alif: Install M55_HE or M55_HP debug stubs (single core configuration)**
+5. Set the AppKit UART switch SW4 to UART4 and open a serial terminal on the UART COM port (115200 8N1)
+6. Press the **Load & Run Application** (play button icon)
 
 Expected output:
 
@@ -858,11 +881,12 @@ This step is shown as a discussion or instructor demo: the repo does not yet con
 
 ---
 
-# Appendix B: participant pre-work (send one week before)
+# Appendix B: participant pre-work
 
-1. Install VS Code, the Arm CMSIS Solution extension pack, the Alif Security Toolkit and SEGGER J-Link, following the [getting started guide](https://github.com/alifsemi/alif_vscode-template/blob/main/doc/getting_started.md)
+1. Install VS Code, the Arm CMSIS Solution extension pack, the Alif Security Toolkit and SEGGER J-Link, following the Getting started guide [https://github.com/alifsemi/alif_vscode-template/blob/main/doc/getting_started.md](https://github.com/alifsemi/alif_vscode-template/blob/main/doc/getting_started.md)
 2. Check the setup by building the **blinky** example in the VS Code template, as described in the guide. If you have a board, program it and see the LED blink.
-3. Optional: `pip install ethos-u-vela` to run Vela during the session
+3. Install a terminal emulator of your choice, Tera Term, CuteCom, Putty, etc. 
+4. Optional: `pip install ethos-u-vela` to run Vela during the session
 
 ---
 
