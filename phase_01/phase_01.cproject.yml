@@ -59,7 +59,6 @@ project:
   define:
     - ETHOSU55 # Choose ETHOSU55.
     - MODEL_YOLO_CPU # Let's start with the CPU model. See model.c for other options.
-    - ARM_MATH_AUTOVECTORIZE # CMSIS-NN GCC compile bug workaround.
 
   packs:
     - pack: ARM::CMSIS-Compiler

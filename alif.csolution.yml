@@ -63,6 +63,7 @@ solution:
       define:
         - _DEBUG
         - ETHOSU_LOG_SEVERITY: 1
+        - ARM_MATH_AUTOVECTORIZE # CMSIS-NN GCC compile bug workaround.
     - type: release
       optimize: speed
       debug: on

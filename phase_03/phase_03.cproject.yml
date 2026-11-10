@@ -72,7 +72,7 @@ project:
     - ETHOSU85
     - MODEL_YOLO_U85_256
     #- MODEL_YOLO_U85_256_SRAM
-    - ARM_MATH_AUTOVECTORIZE # CMSIS-NN GCC compile bug workaround.
+
     # U85 on E8: Normal Non-cacheable Non-bufferable. 0x20 = SRAM port, 0x24 = EXT port.
     # Driver defaults are Device memory and fault. With ETHOSU85 the port per address is
     # chosen by ethosu_config_select() in common/ethosu_cb_dcache.c; NPU_QCONFIG and

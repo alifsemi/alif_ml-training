@@ -298,7 +298,7 @@ uint8_t tensor_arena[0x80000] __attribute__((aligned(16), section(".bss.tensor_a
 ```
 
 ::: notes
-Point out the tflm_gcc folder: it overrides compatibility.h from the TFLM pack to work around a GCC issue. ARM_MATH_AUTOVECTORIZE is a CMSIS-NN GCC workaround. Both are already in place.
+Point out the tflm_gcc folder: it overrides compatibility.h from the TFLM pack to work around a GCC issue. ARM_MATH_AUTOVECTORIZE is a CMSIS-NN GCC workaround that is only needed at -O0: there GCC cannot allocate registers for the hand-written Helium inline assembly ("'asm' operand has impossible constraints"). It is therefore defined in the debug build type of alif.csolution.yml only. Both are already in place.
 :::
 
 ---
@@ -342,6 +342,7 @@ These numbers are visible in Netron and are printed by the firmware in phase_02.
 3. Read the log: the operator list, the tensor arena address, **Arena used** and **Inference time**
 4. Write the numbers in the results worksheet
 5. Optional: switch to `MODEL_KWS_CPU` (keyword spotting) and compare
+6. Optional: rebuild with the **release** build type (SIMD/Helium enabled) and compare the inference time
 
 Questions to discuss:
 
@@ -350,7 +351,26 @@ Questions to discuss:
 - Is the CPU inference time acceptable for a 30 fps camera?
 
 ::: notes
-The model is in MRAM (.rodata.model) and the arena is in SRAM0. Also try the release build type: the debug build is compiled with optimization off, which makes CPU inference far slower.
+The model is in MRAM (.rodata.model) and the arena is in SRAM0. Also try the release build type: the debug build is compiled with optimization off, which makes CPU inference far slower. Measured on the M55 HE: about 7.0 s with the debug build, 458.5 ms with the release build (SIMD/Helium enabled). See the next slide.
+:::
+
+---
+
+# Phase 01 results: debug against release (SIMD/Helium)
+
+| Build type | Compiler flags | CMSIS-NN inner loops | Inference, M55 HE | Speed-up |
+|---|---|---|---|---|
+| debug | `-O0`, `ARM_MATH_AUTOVECTORIZE` | Plain C, not vectorized | about 7.0 s | 1× |
+| release, **SIMD/Helium enabled** | `-O3` | Hand-written Helium (MVE) | **458.5 ms** | about 15× |
+
+- 7,000 ms / 458.5 ms ≈ **15×**, from the build type alone: same model, core, clock and memory placement
+- 458.5 ms × 160 MHz ≈ 73 M cycles for about 39 M MACs, so about **0.53 MAC per cycle** on the CPU
+- Still only about 2 inferences/s: not enough for a 30 fps camera. The Ethos-U55-128 on the same core takes 12.07 ms, about **38× faster** than the Helium CPU build, and about 580× faster than the debug build.
+
+> Benchmark the CPU with an optimized build. A debug build makes the NPU look about 15× better than it really is.
+
+::: notes
+Both runs use the same MODEL_YOLO_CPU model and TFLM CMSIS-NN kernels. In the debug build, CMSIS-NN is compiled at -O0 with ARM_MATH_AUTOVECTORIZE, so the multiply-accumulate loops run as unoptimized scalar C. In the release build (optimize: speed = -O3) CMSIS-NN uses its hand-written Helium loops (vmladava.s8 with tail-predicated wlstp/letp loops), 16 int8 MACs per instruction.
 :::
 
 ---
@@ -621,12 +641,13 @@ The same GPIO marker technique works with any analyzer that has a digital input.
 
 ![Power trace, Cortex-M55 HE running the model without NPU](../misc/power_M55_HE.png)
 
-- Inference window: **7.0 s**
+- Debug build (`-O0`), inference window: **7.0 s**
 - Average power: **75.9 mW**
 - Energy per inference: **532 mJ**
+- Release build, **SIMD/Helium enabled**: **458.5 ms**, power not measured yet
 
 ::: notes
-This is a pre-measured capture. The CPU-only number depends heavily on the build type: a debug build (optimize: none) is much slower than release. Before quoting this figure to customers, confirm which build was measured.
+This is a pre-measured capture of the debug build (optimize: none, -O0). The release build with SIMD/Helium enabled runs the same inference in 458.5 ms, about 15× faster; its power trace has not been captured yet. Do not quote the 7.0 s figure to customers as the CPU baseline.
 :::
 
 ---
@@ -654,17 +675,18 @@ Left, model in MRAM: 2.505 ms, 134.4 mW average, 337 µJ. Right, model in SRAM: 
 
 # Power summary: CPU against NPU
 
-| Configuration | Inference | Avg. power | Energy / inference | Energy against CPU |
+| Configuration | Inference | Avg. power | Energy / inference | Energy against CPU debug / CPU Helium |
 |---|---|---|---|---|
-| M55 HE, CPU only | 7.0 s | 75.9 mW | 532 mJ | 1× |
-| HE + Ethos-U55-128, model in MRAM | 12.07 ms | 92.7 mW | 1.12 mJ | about 475× less |
-| Ethos-U85-256, model in MRAM | 2.505 ms | 134.4 mW | 0.337 mJ | about 1,580× less |
-| Ethos-U85-256, model in SRAM | 2.462 ms | 130.4 mW | 0.321 mJ | about 1,660× less |
+| M55 HE, CPU only, debug `-O0` | 7.0 s | 75.9 mW | 532 mJ | 1× / – |
+| M55 HE, CPU only, release, **SIMD/Helium enabled** | 458.5 ms | not measured | about 34.8 mJ (est.) | about 15× less / 1× |
+| HE + Ethos-U55-128, model in MRAM | 12.07 ms | 92.7 mW | 1.12 mJ | about 475× / 31× less |
+| Ethos-U85-256, model in MRAM | 2.505 ms | 134.4 mW | 0.337 mJ | about 1,580× / 103× less |
+| Ethos-U85-256, model in SRAM | 2.462 ms | 130.4 mW | 0.321 mJ | about 1,660× / 108× less |
 
-> The NPU draws more power while it runs, but it finishes so much sooner that the energy per inference drops by orders of magnitude. Finish fast, then go back to sleep.
+> The NPU draws more power while it runs, but it finishes so much sooner that the energy per inference drops by one to three orders of magnitude, depending on the CPU baseline. Finish fast, then go back to sleep.
 
 ::: notes
-Pre-measured figures from the misc folder. Average power includes the board baseline of roughly 74 mW, visible before and after each burst.
+Pre-measured figures from the misc folder. Average power includes the board baseline of roughly 74 mW, visible before and after each burst. The SIMD/Helium energy is an estimate, not a measurement: 458.5 ms × 75.9 mW (the debug-build average power) ≈ 34.8 mJ. Helium code may draw somewhat more power than scalar code, so replace the estimate once the release build has been measured. Against the Helium CPU baseline the NPU still uses about 30 to 110× less energy per inference.
 :::
 
 ---
@@ -826,7 +848,8 @@ This step is shown as a discussion or instructor demo: the repo does not yet con
 - Vela is your first-order performance and memory model, and it was within about 5% of the board measurements
 - Size the tensor arena from Vela, and place weights in MRAM unless measurements say otherwise
 - Pre- and post-processing are your code, and need the quantization parameters from the model
-- NPU inference uses about 500 to 1,600× less energy per inference than CPU-only on this model
+- NPU inference uses about 475 to 1,660× less energy per inference than the CPU-only debug build on this model, and an estimated 30 to 110× less than the SIMD/Helium-enabled release build
+- Always compare against an optimized CPU build: SIMD/Helium made the CPU inference about 15× faster (7.0 s to 458.5 ms)
 - In a real camera pipeline, the bottleneck moves from inference to data movement: use the ISP, AIPL and DMA
 
 ---
@@ -894,7 +917,8 @@ This step is shown as a discussion or instructor demo: the repo does not yet con
 
 | Run | Core / NPU | Model | Vela est. (ms) | Measured (ms) | Arena used (B) | NPU_ACTIVE (cycles) |
 |---|---|---|---|---|---|---|
-| CPU | M55 HE | `MODEL_YOLO_CPU` | – | | | – |
+| CPU, debug | M55 HE | `MODEL_YOLO_CPU` | – | | | – |
+| CPU, release (SIMD/Helium) | M55 HE | `MODEL_YOLO_CPU` | – | | | – |
 | A | HE / U55-128 | `MODEL_YOLO_U55_128` | 12.57 | | | |
 | B | HP / U55-256 | `MODEL_YOLO_U55_256` | 3.26 | | | |
 | C | U85-256, MRAM | `MODEL_YOLO_U85_256` | 2.52 | | | |
