@@ -637,17 +637,31 @@ The same GPIO marker technique works with any analyzer that has a digital input.
 
 ---
 
-# Power: M55 HE, CPU only
+# Power: M55 HE, CPU only, debug build
 
-![Power trace, Cortex-M55 HE running the model without NPU](../misc/power_M55_HE.png)
+![Power trace, Cortex-M55 HE running the model without NPU, debug build](../misc/power_M55_HE.png)
 
 - Debug build (`-O0`), inference window: **7.0 s**
 - Average power: **75.9 mW**
 - Energy per inference: **532 mJ**
-- Release build, **SIMD/Helium enabled**: **458.5 ms**, power not measured yet
 
 ::: notes
-This is a pre-measured capture of the debug build (optimize: none, -O0). The release build with SIMD/Helium enabled runs the same inference in 458.5 ms, about 15× faster; its power trace has not been captured yet. Do not quote the 7.0 s figure to customers as the CPU baseline.
+This is a pre-measured capture of the debug build (optimize: none, -O0). The release build with SIMD/Helium enabled runs the same inference about 15× faster, see the next slide. Do not quote the 7.0 s figure to customers as the CPU baseline.
+:::
+
+---
+
+# Power: M55 HE, CPU only, SIMD/Helium enabled
+
+![Power trace, Cortex-M55 HE running the model without NPU, release build with SIMD/Helium](../misc/power_M55_HE_SIMD.png)
+
+- Release build (`-O3`), **SIMD/Helium enabled**, inference window: **458.6 ms**
+- Average power: **77.6 mW**
+- Energy per inference: **35.6 mJ**
+- About **15× less energy** than the debug build, at almost the same average power
+
+::: notes
+The power window is 458.625 ms; the firmware PMU cycle counter reported 458.525 ms. Average power is only about 2% higher than the debug build (77.6 against 75.9 mW), so the Helium build saves energy almost exactly in proportion to the time it saves.
 :::
 
 ---
@@ -678,15 +692,15 @@ Left, model in MRAM: 2.505 ms, 134.4 mW average, 337 µJ. Right, model in SRAM: 
 | Configuration | Inference | Avg. power | Energy / inference | Energy against CPU debug / CPU Helium |
 |---|---|---|---|---|
 | M55 HE, CPU only, debug `-O0` | 7.0 s | 75.9 mW | 532 mJ | 1× / – |
-| M55 HE, CPU only, release, **SIMD/Helium enabled** | 458.5 ms | not measured | about 34.8 mJ (est.) | about 15× less / 1× |
-| HE + Ethos-U55-128, model in MRAM | 12.07 ms | 92.7 mW | 1.12 mJ | about 475× / 31× less |
-| Ethos-U85-256, model in MRAM | 2.505 ms | 134.4 mW | 0.337 mJ | about 1,580× / 103× less |
-| Ethos-U85-256, model in SRAM | 2.462 ms | 130.4 mW | 0.321 mJ | about 1,660× / 108× less |
+| M55 HE, CPU only, release, **SIMD/Helium enabled** | 458.6 ms | 77.6 mW | 35.6 mJ | about 15× less / 1× |
+| HE + Ethos-U55-128, model in MRAM | 12.07 ms | 92.7 mW | 1.12 mJ | about 475× / 32× less |
+| Ethos-U85-256, model in MRAM | 2.505 ms | 134.4 mW | 0.337 mJ | about 1,580× / 106× less |
+| Ethos-U85-256, model in SRAM | 2.462 ms | 130.4 mW | 0.321 mJ | about 1,660× / 111× less |
 
 > The NPU draws more power while it runs, but it finishes so much sooner that the energy per inference drops by one to three orders of magnitude, depending on the CPU baseline. Finish fast, then go back to sleep.
 
 ::: notes
-Pre-measured figures from the misc folder. Average power includes the board baseline of roughly 74 mW, visible before and after each burst. The SIMD/Helium energy is an estimate, not a measurement: 458.5 ms × 75.9 mW (the debug-build average power) ≈ 34.8 mJ. Helium code may draw somewhat more power than scalar code, so replace the estimate once the release build has been measured. Against the Helium CPU baseline the NPU still uses about 30 to 110× less energy per inference.
+Pre-measured figures from the misc folder. Average power includes the board baseline of roughly 74 mW, visible before and after each burst. Against the SIMD/Helium CPU baseline (35.6 mJ measured) the NPU still uses about 32 to 111× less energy per inference. This is the fair comparison to quote; the debug-build ratios mostly show the cost of building without optimization.
 :::
 
 ---
@@ -848,8 +862,8 @@ This step is shown as a discussion or instructor demo: the repo does not yet con
 - Vela is your first-order performance and memory model, and it was within about 5% of the board measurements
 - Size the tensor arena from Vela, and place weights in MRAM unless measurements say otherwise
 - Pre- and post-processing are your code, and need the quantization parameters from the model
-- NPU inference uses about 475 to 1,660× less energy per inference than the CPU-only debug build on this model, and an estimated 30 to 110× less than the SIMD/Helium-enabled release build
-- Always compare against an optimized CPU build: SIMD/Helium made the CPU inference about 15× faster (7.0 s to 458.5 ms)
+- NPU inference uses about 475 to 1,660× less energy per inference than the CPU-only debug build on this model, and about 32 to 111× less than the SIMD/Helium-enabled release build
+- Always compare against an optimized CPU build: SIMD/Helium made the CPU inference about 15× faster (7.0 s to 458.5 ms) and cut its energy about 15× (532 to 35.6 mJ)
 - In a real camera pipeline, the bottleneck moves from inference to data movement: use the ISP, AIPL and DMA
 
 ---
