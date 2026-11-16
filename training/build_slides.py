@@ -1,9 +1,11 @@
 """Build the training PowerPoint from the Markdown slide source.
 
 Usage:
-    python build_slides.py [alif_ml_training.md] [-o alif_ml_training.pptx]
+    python build_slides.py [alif_ml_training.md] [-o alif_ml_training.pptx] [--template adi_template.pptx]
 
 The Markdown file is the single source of truth, so the .md and the .pptx stay in sync.
+The masters, layouts and embedded Barlow fonts come from the Analog Devices template
+(adi_template.pptx); any slides already in the template are dropped.
 Slide syntax (see the header of alif_ml_training.md):
     ---                       slide separator
     <!-- layout: handson; time: 0:25-0:45 -->   optional, first line of a slide
@@ -18,6 +20,7 @@ Slide syntax (see the header of alif_ml_training.md):
 Requires python-pptx (pip install python-pptx).
 """
 import argparse
+import copy
 import math
 import os
 import re
@@ -26,36 +29,41 @@ import sys
 from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.shapes import MSO_SHAPE, PP_PLACEHOLDER
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Emu, Inches, Pt
 
-# Theme
-NAVY = RGBColor(0x0B, 0x1F, 0x3A)
+# Theme: the Analog Devices palette from the template's color scheme
+NAVY = RGBColor(0x00, 0x32, 0x5C)
 BLUE = RGBColor(0x00, 0x67, 0xB9)
-TEAL = RGBColor(0x00, 0xA3, 0xAD)
-GREEN = RGBColor(0x2E, 0x9E, 0x5B)
-TEXT = RGBColor(0x26, 0x32, 0x40)
-MUTED = RGBColor(0x6B, 0x77, 0x85)
-LIGHT = RGBColor(0xF2, 0xF4, 0xF7)
-ROW_ALT = RGBColor(0xE8, 0xEE, 0xF5)
+SKY = RGBColor(0x1B, 0x9C, 0xD0)
+GREEN = RGBColor(0x17, 0x99, 0x63)
+TEXT = RGBColor(0x00, 0x00, 0x00)
+MUTED = RGBColor(0x3C, 0x41, 0x57)
 CODE_BG = RGBColor(0xF4, 0xF5, 0xF7)
 CODE_BORDER = RGBColor(0xD0, 0xD5, 0xDD)
-CALLOUT_BG = RGBColor(0xE3, 0xF2, 0xFB)
+CALLOUT_BG = RGBColor(0xE4, 0xF3, 0xFA)
 WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
-FONT = "Calibri"
+FONT = "Barlow"
+TITLE_FONT = "Barlow Medium"
 MONO = "Consolas"
-FOOTER = "Alif Semiconductor · Analog Devices  |  Edge AI hands-on training"
+TABLE_STYLE = "{21E4AEA4-8DFA-4A89-87EB-49C32662AFE0}"  # Medium Style 2 - Accent 2
+
+LAYOUT_COVER = "Cover with Pattern"
+LAYOUT_SECTION = "Section Slide with Pattern"
+LAYOUT_CONTENT = "Title Only – Blank"
 
 SLIDE_W = 13.333
 SLIDE_H = 7.5
-MARGIN = 0.55
-CONTENT_TOP = 1.35
-CONTENT_BOTTOM = 6.85
+MARGIN = 0.46
+CONTENT_TOP = 1.45
+CONTENT_BOTTOM = 7.0
 BLOCK_GAP = 0.14
-CHAR_W = 0.47  # average character width relative to the font size, Calibri
+CHAR_W = 0.47  # average character width relative to the font size
+FONT_SCALE = 1.06  # Barlow against the Calibri-based estimates in char_em
+TITLE_SCALE = 1.04  # Barlow Medium against Barlow
 
 
 # --------------------------------------------------------------------------------------
@@ -227,7 +235,7 @@ NARROW = set("iljtfrI.,:;'|!()[]{} ")
 
 
 def char_em(ch, style):
-    """Approximate glyph advance in em: Calibri for text, Consolas for code."""
+    """Approximate glyph advance in em: Barlow for text, Consolas for code."""
     if style == "code":
         return 0.55 * 0.92
     if ch in NARROW:
@@ -238,7 +246,7 @@ def char_em(ch, style):
         em = 0.51
     else:
         em = 0.47
-    return em * (1.05 if style == "bold" else 1.0)
+    return em * FONT_SCALE * (1.05 if style == "bold" else 1.0)
 
 
 def text_em(text):
@@ -349,35 +357,45 @@ def fit_font(blocks, width_in, height_in, start=22.0, minimum=10.0):
 
 def set_bullet(paragraph, level, number=None):
     pPr = paragraph._p.get_or_add_pPr()
-    indent = Emu(Inches(0.28))
-    pPr.set("marL", str(int(Inches(0.3 + 0.35 * level))))
+    indent = Emu(Inches(0.28 if number is None else 0.34))
+    pPr.set("marL", str(int(Inches(0.3 + 0.35 * level + (0 if number is None else 0.06)))))
     pPr.set("indent", str(-int(indent)))
-    for tag in ("a:buNone", "a:buChar", "a:buAutoNum"):
+    for tag in ("a:buClr", "a:buSzPct", "a:buFont", "a:buNone", "a:buChar", "a:buAutoNum"):
         for el in pPr.findall(qn(tag)):
             pPr.remove(el)
-    font = pPr.makeelement(qn("a:buFont"), {"typeface": FONT})
-    pPr.append(font)
     if number is not None:
-        bu = pPr.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod", "startAt": str(number)})
+        pPr.append(pPr.makeelement(qn("a:buFont"), {"typeface": FONT}))
+        pPr.append(pPr.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod", "startAt": str(number)}))
+        return
+    clr = pPr.makeelement(qn("a:buClr"), {})
+    clr.append(clr.makeelement(qn("a:srgbClr"), {"val": str(BLUE if level == 0 else TEXT)}))
+    pPr.append(clr)
+    if level == 0:
+        pPr.append(pPr.makeelement(qn("a:buSzPct"), {"val": "70000"}))
+        pPr.append(pPr.makeelement(qn("a:buFont"), {"typeface": "Wingdings", "pitchFamily": "2", "charset": "2"}))
+        pPr.append(pPr.makeelement(qn("a:buChar"), {"char": "§"}))
     else:
-        bu = pPr.makeelement(qn("a:buChar"), {"char": "•" if level == 0 else "–"})
-    pPr.append(bu)
+        pPr.append(pPr.makeelement(qn("a:buSzPct"), {"val": "90000"}))
+        pPr.append(pPr.makeelement(qn("a:buFont"), {"typeface": "Arial"}))
+        pPr.append(pPr.makeelement(qn("a:buChar"), {"char": "–"}))
 
 
-def add_runs(paragraph, text, size, color=TEXT, bold=False, link_color=BLUE):
+def add_runs(paragraph, text, size, color=TEXT, bold=False, link_color=BLUE, font=FONT):
     for value, style, url in inline_runs(text):
         run = paragraph.add_run()
         run.text = value
         f = run.font
         f.size = Pt(size)
-        f.name = FONT
+        f.name = font
         f.bold = bold or style == "bold"
         f.italic = style == "italic"
-        f.color.rgb = color
+        if color is not None:
+            f.color.rgb = color
         if style == "code":
             f.name = MONO
             f.size = Pt(size * 0.92)
-            f.color.rgb = NAVY if color == TEXT else color
+            if color is not None:
+                f.color.rgb = NAVY if color == TEXT else color
         elif style == "link":
             run.hyperlink.address = url
             f.color.rgb = link_color
@@ -469,9 +487,13 @@ def render_table(slide, rows, x, y, w, base):
     gshape = slide.shapes.add_table(len(rows), cols, Inches(x), Inches(y), Inches(w), Inches(h))
     table = gshape.table
     tbl_pr = gshape._element.graphic.graphicData.tbl.tblPr
+    tbl_pr.set("firstRow", "1")
+    tbl_pr.set("bandRow", "1")
     style = tbl_pr.find(qn("a:tableStyleId"))
-    if style is not None:
-        style.text = "{5940675A-B579-460E-94D1-54222C63F5DA}"  # No Style, Table Grid
+    if style is None:
+        style = tbl_pr.makeelement(qn("a:tableStyleId"), {})
+        tbl_pr.append(style)
+    style.text = TABLE_STYLE
     for c, cw in enumerate(widths):
         table.columns[c].width = Inches(cw)
     for r, row in enumerate(rows):
@@ -482,11 +504,6 @@ def render_table(slide, rows, x, y, w, base):
             cell.margin_left = cell.margin_right = Inches(0.06)
             cell.margin_top = cell.margin_bottom = Inches(0.03)
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
-            cell.fill.solid()
-            if r == 0:
-                cell.fill.fore_color.rgb = NAVY
-            else:
-                cell.fill.fore_color.rgb = ROW_ALT if r % 2 == 0 else WHITE
             tf = cell.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
@@ -534,7 +551,7 @@ def render_blocks(slide, blocks, x, y, w, h, start=22.0):
         elif kind == "para":
             cy += render_para(slide, block[1], x, cy, w, size)
         elif kind == "subhead":
-            cy += render_para(slide, block[1], x, cy, w, size * 1.05, color=BLUE, bold=True)
+            cy += render_para(slide, block[1], x, cy, w, size * 1.05, color=NAVY, bold=True)
         elif kind == "callout":
             cy += render_callout(slide, block[1], x, cy, w, size)
         elif kind == "code":
@@ -545,60 +562,72 @@ def render_blocks(slide, blocks, x, y, w, h, start=22.0):
     return size
 
 
-def fill_background(slide, color):
-    bg = slide.background.fill
-    bg.solid()
-    bg.fore_color.rgb = color
+def placeholder(slide, idx):
+    for ph in slide.placeholders:
+        if ph.placeholder_format.idx == idx:
+            return ph
+    raise KeyError(f"layout '{slide.slide_layout.name}' has no placeholder idx={idx}")
+
+
+def pin_geometry(shape, width=None):
+    """Give a placeholder its own position, so it can be resized without moving to the origin."""
+    left, top, height = shape.left, shape.top, shape.height
+    shape.left, shape.top, shape.height = left, top, height
+    shape.width = Inches(width) if width is not None else shape.width
+
+
+def remove_shape(shape):
+    shape._element.getparent().remove(shape._element)
+
+
+def fit_size(text, width_in, start, minimum, scale=TITLE_SCALE):
+    size = start
+    while size > minimum and text_em(text) * scale * size / 72 > width_in:
+        size -= 1
+    return size
 
 
 def add_footer(slide, number):
-    _, tf = new_textbox(slide, MARGIN, 7.05, 9.0, 0.3)
-    run = tf.paragraphs[0].add_run()
-    run.text = FOOTER
-    run.font.size = Pt(10)
-    run.font.name = FONT
-    run.font.color.rgb = MUTED
-    _, tf = new_textbox(slide, SLIDE_W - MARGIN - 1.0, 7.05, 1.0, 0.3)
-    p = tf.paragraphs[0]
-    p.alignment = PP_ALIGN.RIGHT
-    run = p.add_run()
-    run.text = str(number)
-    run.font.size = Pt(10)
-    run.font.name = FONT
-    run.font.color.rgb = MUTED
+    """Copy the legal statement and slide number from the layout; add_slide does not clone them."""
+    for ph in slide.slide_layout.placeholders:
+        if ph.placeholder_format.type not in (PP_PLACEHOLDER.FOOTER, PP_PLACEHOLDER.SLIDE_NUMBER):
+            continue
+        el = copy.deepcopy(ph._element)
+        el.nvSpPr.cNvPr.id = slide.shapes._next_shape_id
+        for field in el.iter(qn("a:fld")):
+            field.find(qn("a:t")).text = str(number)
+        slide.shapes._spTree.insert_element_before(el, "p:extLst")
 
 
-def add_title(slide, title):
-    _, tf = new_textbox(slide, MARGIN, 0.35, SLIDE_W - 2 * MARGIN - 2.6, 0.8)
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
-    p = tf.paragraphs[0]
-    size = 30 if len(title) <= 48 else 26
-    add_runs(p, title, size, color=NAVY, bold=True)
-    line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(MARGIN), Inches(1.15), Inches(1.2), Inches(0.06))
-    line.fill.solid()
-    line.fill.fore_color.rgb = TEAL
-    line.line.fill.background()
+def add_title(slide, title, width):
+    ph = slide.shapes.title
+    if width < ph.width / 914400:
+        pin_geometry(ph, width)
+    size = fit_size(title, width, 32, 22)
+    add_runs(ph.text_frame.paragraphs[0], title, size, color=BLUE, font=TITLE_FONT)
 
 
 def add_handson_badge(slide, time):
     label = "HANDS-ON" + (f"  ·  {time}" if time else "")
     w = 1.5 if not time else 2.6
-    badge = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(SLIDE_W - MARGIN - w), Inches(0.45),
-                                   Inches(w), Inches(0.45))
+    badge = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(SLIDE_W - MARGIN - w), Inches(0.86),
+                                   Inches(w), Inches(0.36))
     badge.fill.solid()
     badge.fill.fore_color.rgb = GREEN
     badge.line.fill.background()
+    badge.shadow.inherit = False
     tf = badge.text_frame
     tf.margin_left = tf.margin_right = Inches(0.05)
+    tf.margin_top = tf.margin_bottom = Inches(0)
     tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     p = tf.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
     run = p.add_run()
     run.text = label
-    run.font.size = Pt(13)
-    run.font.bold = True
-    run.font.name = FONT
+    run.font.size = Pt(12)
+    run.font.name = TITLE_FONT
     run.font.color.rgb = WHITE
+    return w
 
 
 # --------------------------------------------------------------------------------------
@@ -606,49 +635,42 @@ def add_handson_badge(slide, time):
 # --------------------------------------------------------------------------------------
 
 def build_title_slide(slide, s):
-    fill_background(slide, NAVY)
-    band = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(5.6), Inches(SLIDE_W), Inches(0.08))
-    band.fill.solid()
-    band.fill.fore_color.rgb = TEAL
-    band.line.fill.background()
-    _, tf = new_textbox(slide, 0.9, 1.8, SLIDE_W - 1.8, 1.3)
-    add_runs(tf.paragraphs[0], s["title"], 48, color=WHITE, bold=True)
+    """Cover with Pattern: title and subtitle in the title block, the detail line split over
+    the author (light blue) and job title (white) lines at the first ' · '."""
+    tf = placeholder(slide, 10).text_frame
+    add_runs(tf.paragraphs[0], s["title"], 44, color=WHITE, font=TITLE_FONT)
     if s["subtitle"]:
-        _, tf = new_textbox(slide, 0.9, 3.1, SLIDE_W - 1.8, 1.0)
-        add_runs(tf.paragraphs[0], s["subtitle"], 26, color=RGBColor(0xBF, 0xD9, 0xF2))
+        p = tf.add_paragraph()
+        p.space_before = Pt(6)
+        add_runs(p, s["subtitle"], fit_size(s["subtitle"], 2 * 4.8, 28, 18), color=WHITE, font=TITLE_FONT)
     paras = [b[1] for b in s["blocks"] if b[0] == "para"]
-    if paras:
-        _, tf = new_textbox(slide, 0.9, 4.5, SLIDE_W - 1.8, 0.8)
-        add_runs(tf.paragraphs[0], paras[0], 18, color=RGBColor(0xD0, 0xD8, 0xE2))
-    _, tf = new_textbox(slide, 0.9, 6.0, SLIDE_W - 1.8, 0.5)
-    add_runs(tf.paragraphs[0], "Alif Semiconductor · Analog Devices", 16, color=WHITE, bold=True)
+    detail = paras[0].split(" · ", 1) if paras else []
+    for k, (idx, start, bold) in enumerate(((14, 20, True), (15, 12, False))):
+        ph = placeholder(slide, idx)
+        if k >= len(detail):
+            remove_shape(ph)
+            continue
+        pin_geometry(ph, 5.51)
+        size = fit_size(detail[k], 5.4, start, 12)
+        add_runs(ph.text_frame.paragraphs[0], detail[k], size, color=None, bold=bold, font=TITLE_FONT)
 
 
-def build_section_slide(slide, s, number):
-    fill_background(slide, BLUE)
-    bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.9), Inches(2.55), Inches(0.12), Inches(2.0))
-    bar.fill.solid()
-    bar.fill.fore_color.rgb = TEAL
-    bar.line.fill.background()
-    _, tf = new_textbox(slide, 1.3, 2.4, SLIDE_W - 2.2, 1.2)
-    add_runs(tf.paragraphs[0], s["title"], 44, color=WHITE, bold=True)
+def build_section_slide(slide, s):
+    tf = placeholder(slide, 10).text_frame
+    add_runs(tf.paragraphs[0], s["title"], 44, color=WHITE, font=TITLE_FONT)
     if s["subtitle"]:
-        _, tf = new_textbox(slide, 1.3, 3.6, SLIDE_W - 2.2, 0.9)
-        add_runs(tf.paragraphs[0], s["subtitle"], 24, color=RGBColor(0xDC, 0xEB, 0xF7))
-    _, tf = new_textbox(slide, SLIDE_W - MARGIN - 1.0, 7.05, 1.0, 0.3)
-    p = tf.paragraphs[0]
-    p.alignment = PP_ALIGN.RIGHT
-    run = p.add_run()
-    run.text = str(number)
-    run.font.size = Pt(10)
-    run.font.color.rgb = WHITE
+        p = tf.add_paragraph()
+        p.space_before = Pt(10)
+        add_runs(p, s["subtitle"], 24, color=WHITE, font=TITLE_FONT)
 
 
 def build_content_slide(slide, s, number, base_dir):
-    add_title(slide, s["title"])
-    if s["layout"] == "handson":
-        add_handson_badge(slide, s["time"])
     add_footer(slide, number)
+    title_w = SLIDE_W - 2 * MARGIN - 1.4
+    if s["layout"] == "handson":
+        badge_w = add_handson_badge(slide, s["time"])
+        title_w = min(title_w, SLIDE_W - 2 * MARGIN - badge_w - 0.25)
+    add_title(slide, s["title"], title_w)
 
     images = [b for b in s["blocks"] if b[0] == "image"]
     others = [b for b in s["blocks"] if b[0] != "image"]
@@ -686,28 +708,55 @@ def build_content_slide(slide, s, number, base_dir):
         slide.notes_slide.notes_text_frame.text = s["notes"]
 
 
-def build(md_path, out_path):
+def open_template(path):
+    """Open the template and drop its slides, keeping the masters, layouts and fonts."""
+    prs = Presentation(path)
+    sld_ids = prs.slides._sldIdLst
+    for sld_id in list(sld_ids):
+        prs.part.drop_rel(sld_id.rId)
+        sld_ids.remove(sld_id)
+    ext_lst = prs.part._element.find(qn("p:extLst"))
+    if ext_lst is not None:
+        for ext in list(ext_lst):
+            if any(child.tag.endswith("}sectionLst") for child in ext):
+                ext_lst.remove(ext)
+    return prs
+
+
+def find_layout(prs, name):
+    for layout in prs.slide_layouts:
+        if layout.name == name:
+            return layout
+    names = ", ".join(repr(l.name) for l in prs.slide_layouts)
+    raise SystemExit(f"Template has no layout named {name!r}; available: {names}")
+
+
+def build(md_path, out_path, template_path):
     with open(md_path, encoding="utf-8") as f:
         md = f.read()
     md = re.sub(r"\A\s*<!--(?!\s*(layout|time):).*?-->", "", md, flags=re.S)
     slides = [parse_slide(s) for s in split_slides(md)]
     base_dir = os.path.dirname(os.path.abspath(md_path))
 
-    prs = Presentation()
+    prs = open_template(template_path)
     prs.slide_width = Inches(SLIDE_W)
     prs.slide_height = Inches(SLIDE_H)
-    blank = prs.slide_layouts[6]
+    cover = find_layout(prs, LAYOUT_COVER)
+    section = find_layout(prs, LAYOUT_SECTION)
+    content = find_layout(prs, LAYOUT_CONTENT)
 
     for number, s in enumerate(slides, start=1):
         print(f"[{number:2d}] {s['layout']:8s} {s['title']}")
-        slide = prs.slides.add_slide(blank)
         if s["layout"] == "title":
+            slide = prs.slides.add_slide(cover)
             build_title_slide(slide, s)
             if s["notes"]:
                 slide.notes_slide.notes_text_frame.text = s["notes"]
         elif s["layout"] == "section":
-            build_section_slide(slide, s, number)
+            slide = prs.slides.add_slide(section)
+            build_section_slide(slide, s)
         else:
+            slide = prs.slides.add_slide(content)
             build_content_slide(slide, s, number, base_dir)
 
     prs.save(out_path)
@@ -720,9 +769,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("markdown", nargs="?", default=os.path.join(here, "alif_ml_training.md"))
     parser.add_argument("-o", "--output", default=None)
+    parser.add_argument("--template", default=os.path.join(here, "adi_template.pptx"))
     args = parser.parse_args()
     out = args.output or os.path.splitext(args.markdown)[0] + ".pptx"
-    build(args.markdown, out)
+    build(args.markdown, out, args.template)
 
 
 if __name__ == "__main__":
